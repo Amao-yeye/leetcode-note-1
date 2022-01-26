@@ -1,0 +1,279 @@
+100-1
+
+class Solution {
+public:
+    vector<int> twoSum(vector<int>& nums, int target) {
+        int i,j,len;
+        len = nums.size()-1;//向量num长度
+        for(i=0;i<len;i++)
+        {
+            for(j=i+1;j<len;j++)
+            {
+                if(nums[i]+nums[j]==target)
+                {
+                   return {i,j};
+                }
+            }
+        }
+        return {};
+    };
+};
+
+void trimLeftTrailingSpaces(string &input) {
+    input.erase(input.begin(), find_if(input.begin(), input.end(), [](int ch) {
+        return !isspace(ch);
+    }));
+}
+
+void trimRightTrailingSpaces(string &input) {
+    input.erase(find_if(input.rbegin(), input.rend(), [](int ch) {
+        return !isspace(ch);
+    }).base(), input.end());
+}
+
+vector<int> stringToIntegerVector(string input) {
+    vector<int> output;
+    trimLeftTrailingSpaces(input);
+    trimRightTrailingSpaces(input);
+    input = input.substr(1, input.length() - 2);
+    stringstream ss;
+    ss.str(input);
+    string item;
+    char delim = ',';
+    while (getline(ss, item, delim)) {
+        output.push_back(stoi(item));
+    }
+    return output;
+}
+
+int stringToInteger(string input) {
+    return stoi(input);
+}
+
+string integerVectorToString(vector<int> list, int length = -1) {
+    if (length == -1) {
+        length = list.size();
+    }
+
+    if (length == 0) {
+        return "[]";
+    }
+
+    string result;
+    for(int index = 0; index < length; index++) {
+        int number = list[index];
+        result += to_string(number) + ", ";
+    }
+    return "[" + result.substr(0, result.length() - 2) + "]";
+}
+
+int main() {
+    string line;
+    while (getline(cin, line)) {
+        vector<int> nums = stringToIntegerVector(line);
+        getline(cin, line);
+        int target = stringToInteger(line);
+        
+        vector<int> ret = Solution().twoSum(nums, target);
+
+        string out = integerVectorToString(ret);
+        cout << out << endl;
+    }
+    return 0;
+}
+
+方法学习：哈希【参照题解】
+map: 建立key-value的对应
+class Solution {
+public:
+    vector<int> twoSum(vector<int>& nums, int target) {
+        map<int,int> a;//提供一对一的hash
+        vector<int> b(2,-1);//用来承载结果，初始化一个大小为2，值为-1的容器b
+        for(int i=0;i<nums.size();i++)
+        {
+            if(a.count(target-nums[i])>0)
+            {
+                b[0]=a[target-nums[i]];
+                b[1]=i;
+                break;
+            }
+            a[nums[i]]=i;//反过来放入map中，用来获取结果下标
+        }
+        return b;
+    };
+};
+
+
+
+
+100-11
+盛最多水的容器，理解成为：长方形的面积要达到最大。
+暴力方法：遍历，把每两根线的情况算一遍进行比较×
+
+题解方案：双指针。
+方法思路和理解：每一次指针动，相当于删除一根柱子
+因为水的高度是由两根中较短的那个决定的
+两边的柱子都去移动，可以确定的是宽度一定减小，所以高度不能再变小。
+故左右柱子可以当作双指针的两边指针，循环结束的标志就是两边的指针撞到一起。
+
+class Solution {
+public:
+    int maxArea(vector<int>& height) {//双指针方法尝试
+        int my_maxArea = 0;
+        int i,j;//两端的指针下表
+      
+        i = 0;
+        j = height.size()-1;
+        while (i < j){
+            int mH = min(height[i], height[j]);
+            int mW = j-i;
+            if (mH*mW > my_maxArea) my_maxArea = mH*mW;
+            if (height[i] < height[j]){
+                i++;
+            }else{
+                j--;
+            }
+        }
+        return my_maxArea;
+    }
+};
+
+
+
+
+100-16最接近的三数之和
+从长度为n的数组里面选三个数作和，暴力搜索的有C_n3中组合，当length为题目中上限1000的时候，求和数接近1000^3/6
+[我的思考]先快速排序，那么不需要计算的部分就是三个全大于待求和，或者三个全小于待求和的情况
+然后再可以利用上一题类似的双指针缩小空间的方法---固定一个，然后移动另外两个直到找到不会有再小的情况了。
+
+【参考官方】
+class Solution {
+public:
+    int threeSumClosest(vector<int>& nums, int target) {
+        int n = nums.size();
+        for (int i = 0; i < n-1; i++) {
+		    for (int j = 0; j< n-1-i; j++)
+		    {
+			    if (nums[j]>nums[j+1]) 
+			    {
+				    int temp;
+			        temp = nums[j];
+			    	nums[j] = nums[j+1];
+				    nums[j+1] = temp;
+			}
+		    }
+        }//可改进：这里可以用已有的函数！
+        int best = 100000;
+
+        // 根据差值的绝对值来更新答案
+        auto update = [&](int cur) {
+            if (abs(cur - target) < abs(best - target)) {
+                best = cur;
+            }
+        };///auto作为一个新的类型指示符来指示编译器，auto声明的变量必须由编译器在编译时期推导而得。
+
+        // 枚举 a
+        for (int i = 0; i < n; ++i) {
+            // 保证和上一次枚举的元素不相等
+            if (i > 0 && nums[i] == nums[i - 1]) {
+                continue;
+            }
+            // 使用双指针枚举 b 和 c
+            int j = i + 1, k = n - 1;
+            while (j < k) {
+                int sum = nums[i] + nums[j] + nums[k];
+                // 如果和为 target 直接返回答案
+                if (sum == target) {
+                    return target;
+                }
+                update(sum);
+                if (sum > target) {
+                    // 如果和大于 target，移动 c 对应的指针
+                    int k0 = k - 1;
+                    // 移动到下一个不相等的元素
+                    while (j < k0 && nums[k0] == nums[k]) {
+                        --k0;
+                    }
+                    k = k0;
+                } else {
+                    // 如果和小于 target，移动 b 对应的指针
+                    int j0 = j + 1;
+                    // 移动到下一个不相等的元素
+                    while (j0 < k && nums[j0] == nums[j]) {
+                        ++j0;
+                    }
+                    j = j0;
+                }
+            }
+        }
+        return best;
+    }
+};
+
+};
+
+========================================================
+100-69
+问题：非整数平方根怎么办呀
+2*2=4   2=4/2
+保留整数：  
+5-8都是2
+3*3=9   3<9/2
+故从9及以上就可以从小于其二分之的整数算起
+class Solution {
+public:
+    int mySqrt(int x) {
+        int y;
+        if(x == 1){
+            y = 1;
+        
+        }else if(x<9 && x>1){
+            y = 2;
+        }else if(x>=9){
+            int ytemp = int(x/2);
+            
+            for(ytemp=int(x/2);ytemp<x;y++){
+                if(ytemp*ytemp<=x && (ytemp+1)*(ytemp+1)>x){
+                    break;
+                }
+            y = ytemp;
+            }
+
+        }
+        return y;
+
+    }
+};
+
+【总结】使用了改进了一丢丢的暴力解法，大收获从解析中得到。
+【题解方法学习】
+1. 把根号x写作x^1/2then用自然对数换底
+class Solution {
+public:
+    int mySqrt(int x) {
+        if (x == 0) {
+            return 0;
+        }
+        int ans = exp(0.5 * log(x));
+        return ((long long)(ans + 1) * (ans + 1) <= x ? ans + 1 : ans);
+    }
+};
+2. 搜索方法的优化：二分查找
+3. 牛顿迭代
+牛顿迭代可用来快速求解函数零点（联想：牛顿拉夫逊迭代求机械臂数值解）
+即把题目换成求：y=f(x)=x^2-C的零点
+
+
+
+100-22 括号生成
+生成所有有效的括号组合。递归？
+思路生成:
+如果给出n个()
+
+左右括号数相等
+先出现的左括号>=右括号【第一个肯定不是右括号】
+连续的右括号不可以>n
+深度优先搜索
+树
+
+
